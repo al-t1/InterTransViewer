@@ -1,0 +1,18 @@
+bibentry(
+  bibtype = "Article",
+  title   = "{InterTransViewer}: a comparative description of differential gene expression profiles from different experiments",
+  author  = c(person("A. V.", "Tyapkin"), person("V. V.", "Lavrekha"),
+              person("E. V.", "Ubogoeva"), person("D. Yu.", "Oshchepkov"),
+              person("N. A.", "Omelyanchuk"), person("E. V.", "Zemlyanskaya")),
+  journal = "Vavilov Journal of Genetics and Breeding",
+  year    = "2023",
+  volume  = "27",
+  number  = "8",
+  pages   = "1042--1052",
+  doi     = "10.18699/VJGB-23-119",
+  textVersion = paste(
+    "Tyapkin A.V., Lavrekha V.V., Ubogoeva E.V., Oshchepkov D.Yu., Omelyanchuk N.A.,",
+    "Zemlyanskaya E.V. InterTransViewer: a comparative description of differential",
+    "gene expression profiles from different experiments. Vavilov Journal of",
+    "Genetics and Breeding. 2023;27(8):1042-1052. doi:10.18699/VJGB-23-119")
+)

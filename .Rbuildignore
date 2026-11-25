@@ -1,0 +1,7 @@
+^LICENSE$
+^README\.md$
+^data-raw$
+^\.github$
+^.*\.Rproj$
+^\.Rproj\.user$
+^Results$
