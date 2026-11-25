@@ -27,7 +27,8 @@ are set to 0 first.}
 \value{
 An object of class `itv_cluster`: a list with `tree` (an
   `hclust` object), `experiments` (names of the experiments used; leaf i
-  of the tree is `experiments[i]`), `support` (one value per merge, in the order of
+  of the tree is `experiments[i]`), `numbers` (their positions in `x`),
+  `support` (one value per merge, in the order of
   `tree$merge`), `n_genes` (genes used) and `n_complete` (genes measured in
   all experiments).
 }

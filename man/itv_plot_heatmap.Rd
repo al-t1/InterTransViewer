@@ -8,7 +8,8 @@ itv_plot_heatmap(
   x,
   metric = c("overlap", "jaccard"),
   hclust_method = "complete",
-  main = NULL
+  main = NULL,
+  labels = NULL
 )
 }
 \arguments{
@@ -19,6 +20,9 @@ itv_plot_heatmap(
 \item{hclust_method}{Agglomeration method for [stats::hclust()].}
 
 \item{main}{Plot title.}
+
+\item{labels}{Optional character vector named by experiment, see
+[itv_plot_totals()]. By default, the experiment names.}
 }
 \value{
 The value of [stats::heatmap()] invisibly, or `NULL` if fewer than
@@ -27,8 +31,9 @@ The value of [stats::heatmap()] invisibly, or `NULL` if fewer than
 \description{
 Rows and columns are ordered by hierarchical clustering of the rows of the
 similarity matrix (Euclidean distance), as in InterTransViewer 0.1.
-Experiments without DEGs are left out with a warning. Draws on the
-current device.
+Experiments without DEGs are left out with a warning. Each row and column
+is labelled with the experiment number (its position in `x`) and its
+label. Draws on the current device.
 }
 \examples{
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")

@@ -60,6 +60,6 @@ for (j in seq_len(nrow(exps))) {
 dir.create("inst/extdata", recursive = TRUE, showWarnings = FALSE)
 utils::write.table(tab, "inst/extdata/example_profiles.csv", sep = ";",
                    quote = FALSE, row.names = FALSE, na = "")
-utils::write.table(cbind(Order = seq_len(nrow(exps)), exps[, c("Study", "Method", "Organ", "Time")]),
+utils::write.table(cbind(experiment = exps$name, exps[, c("Study", "Method", "Organ", "Time")]),
                    "inst/extdata/example_description.csv", sep = ";",
                    quote = FALSE, row.names = FALSE)

@@ -16,8 +16,9 @@ test_that("itv fills in names and stores the DEG definition", {
   expect_equal(dimnames(x$FDR), dimnames(x$logFC))
   expect_equal(x$FDR_cutoff, 0.05)
   expect_equal(x$logFC_cutoff, 0)
-  expect_null(x$metadata)
   expect_true(all(x$measured))
+  expect_setequal(names(x), c("logFC", "FDR", "deg", "measured", "FDR_cutoff",
+                              "logFC_cutoff"))
 })
 
 test_that("itv rejects bad input", {
@@ -32,28 +33,34 @@ test_that("itv rejects bad input", {
   expect_error(itv(matrix(1), matrix(0.1), logFC_cutoff = -1), "logFC_cutoff")
 })
 
-test_that("print shows the size, the DEG definition and metadata", {
+test_that("print shows the size and the DEG definition", {
   x <- itv_read(example_file())
   out <- capture.output(print(x))
   expect_match(out[1], "1500 genes x 8 experiments")
   expect_match(out[2], "FDR < 0.05")
-  expect_true(any(grepl("Metadata: none", out)))
-  x2 <- itv_read(example_file(), logFC_cutoff = 1,
-                 metadata = example_file("example_description.csv"))
-  out2 <- capture.output(print(x2))
-  expect_match(out2[2], "\\|logFC\\| >= 1")
-  expect_true(any(grepl("Metadata: 5 columns", out2)))
+  out2 <- capture.output(print(itv_read(example_file(), logFC_cutoff = 1)))
+  expect_match(out2[2], "|logFC| >= 1", fixed = TRUE)
 })
 
-test_that("itv_subset keeps experiments by name or number, with their metadata", {
-  x <- itv_read(example_file(), metadata = example_file("example_description.csv"))
+test_that("itv_subset keeps experiments by name or number", {
+  x <- itv_read(example_file())
   s <- itv_subset(x, c("shoot_1h_C", "root_1h_A"))
   expect_equal(itv_experiments(s), c("shoot_1h_C", "root_1h_A"))
   expect_equal(s$logFC, x$logFC[, c(5, 1)])
   expect_equal(s$deg, x$deg[, c(5, 1)])
   expect_equal(s$measured, x$measured[, c(5, 1)])
-  expect_equal(s$metadata$Organ, c("Shoot", "Root"))
   expect_equal(itv_subset(x, c(5, 1)), s)
+})
+
+test_that("labels are matched to experiments by name", {
+  exps <- c("a", "b")
+  expect_equal(resolve_labels(NULL, exps), exps)
+  expect_equal(resolve_labels(c(b = "B", z = "Z", a = "A"), exps), c("A", "B"))
+  expect_error(resolve_labels(c(a = "A"), exps), "no entry for: b")
+  expect_error(resolve_labels(c("A", "B"), exps), "named by experiment")
+  expect_error(resolve_labels(c(a = "A", a = "A2", b = "B"), exps), "named by experiment")
+  expect_error(resolve_labels(c(a = NA, b = "B"), exps), "named by experiment")
+  expect_error(resolve_labels(list(a = "A", b = "B"), exps), "named by experiment")
 })
 
 test_that("itv_subset rejects unknown or repeated experiments", {

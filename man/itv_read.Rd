@@ -4,7 +4,7 @@
 \alias{itv_read}
 \title{Read differential expression profiles}
 \usage{
-itv_read(file, sep = ";", FDR_cutoff = 0.05, logFC_cutoff = 0, metadata = NULL)
+itv_read(file, sep = ";", FDR_cutoff = 0.05, logFC_cutoff = 0)
 }
 \arguments{
 \item{file}{Path to the table.}
@@ -14,9 +14,6 @@ the header, semicolon, comma and tab are tried, and the only one that
 fits is used, with a message.}
 
 \item{FDR_cutoff, logFC_cutoff}{DEG definition, see [itv()].}
-
-\item{metadata}{Optional experiment descriptions: a data frame, or the
-path of a file read with [itv_read_metadata()]. See [itv_add_metadata()].}
 }
 \value{
 An object of class `itv`.

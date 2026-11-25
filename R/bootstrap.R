@@ -27,12 +27,19 @@ itv_bootstrap <- function(x, y = x, size1 = NULL, sizes2 = NULL, iter = 1000,
                           progress = interactive()) {
   deg1 <- deg_matrix(x)
   deg2 <- deg_matrix(y)
+  check_number(iter, "iter", 1, whole = TRUE)
+  check_flag(progress, "progress")
+  if (!missing(y)) warn_gene_sets(deg1, deg2)
   if (is.null(size1)) size1 <- ncol(deg1)
   if (is.null(sizes2)) {
     if (size1 < 2) stop("The default sizes need at least 2 experiments.", call. = FALSE)
     sizes2 <- (size1 - 1):1
   }
-  if (size1 < 1 || any(sizes2 < 1)) stop("Sample sizes must be >= 1.", call. = FALSE)
+  check_number(size1, "size1", 1, whole = TRUE)
+  if (!is.numeric(sizes2) || length(sizes2) == 0 || anyNA(sizes2) ||
+      any(sizes2 != round(sizes2)))
+    stop("'sizes2' must be whole numbers.", call. = FALSE)
+  if (any(sizes2 < 1)) stop("Sample sizes must be >= 1.", call. = FALSE)
 
   ## Each experiment as the row numbers of its DEGs; N is the size of their union.
   idx1 <- lapply(seq_len(ncol(deg1)), function(j) which(deg1[, j]))
@@ -57,6 +64,21 @@ itv_bootstrap <- function(x, y = x, size1 = NULL, sizes2 = NULL, iter = 1000,
   attr(out, "size1") <- size1
   attr(out, "sizes2") <- sizes2
   out
+}
+
+## The size of a union of DEG lists grows with the number of genes tested,
+## so comparing sets measured on different genes is confounded.
+warn_gene_sets <- function(deg1, deg2) {
+  g1 <- rownames(deg1)
+  g2 <- rownames(deg2)
+  same <- if (is.null(g1) || is.null(g2)) nrow(deg1) == nrow(deg2) else setequal(g1, g2)
+  if (!same)
+    warning("x and y do not have the same genes (", nrow(deg1), " and ", nrow(deg2),
+            if (!is.null(g1) && !is.null(g2))
+              paste0(", ", length(intersect(g1, g2)), " shared"),
+            "). The number of DEGs in a union depends on how many genes were ",
+            "tested, so d also reflects this difference. Consider keeping only the ",
+            "shared genes in both.", call. = FALSE)
 }
 
 #' Percentile intervals of bootstrap results

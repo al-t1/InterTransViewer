@@ -104,3 +104,15 @@ test_that("the example data is read without warnings", {
   expect_equal(dim(x$deg), c(1500L, 8L))
   expect_equal(sum(!x$measured[, "root_4h_B"]), 450)
 })
+
+test_that("logFC and FDR columns of different experiments are refused", {
+  f <- tempfile()
+  writeLines(c("ID;logFC_a;FDR_b;logFC_b;FDR_a", "G1;1;0.01;2;0.02"), f)
+  expect_error(itv_read(f), paste0("Name mismatch between 'logFC_a' (column 2) and ",
+                                   "'FDR_b' (column 3); 'logFC_b' (column 4) and ",
+                                   "'FDR_a' (column 5)."), fixed = TRUE)
+  ok <- c("ID;logFC_a;padj_a;b.logFC;b.adj.P.Val;logFC_c;FDR;a_log2FC;a_padj",
+          "G1;1;0.01;2;0.02;1;0.01;1;0.01")
+  writeLines(ok, f)
+  expect_equal(itv_experiments(itv_read(f)), c("a", "b", "c", "a_log2FC"))
+})

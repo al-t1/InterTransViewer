@@ -23,7 +23,6 @@ An object of class `itv`: a list with
   \item{deg}{logical matrix of DEG calls;}
   \item{measured}{logical matrix, `TRUE` where the FDR is not missing.
     Kept for reference; the indicators treat unmeasured genes as not DE;}
-  \item{metadata}{experiment descriptions or `NULL`, see [itv_add_metadata()];}
   \item{FDR_cutoff, logFC_cutoff}{the DEG definition.}
 }
 \description{

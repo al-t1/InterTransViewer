@@ -21,7 +21,8 @@
 #' @param boot_iter Number of bootstrap replicates for clade support.
 #' @return An object of class `itv_cluster`: a list with `tree` (an
 #'   `hclust` object), `experiments` (names of the experiments used; leaf i
-#'   of the tree is `experiments[i]`), `support` (one value per merge, in the order of
+#'   of the tree is `experiments[i]`), `numbers` (their positions in `x`),
+#'   `support` (one value per merge, in the order of
 #'   `tree$merge`), `n_genes` (genes used) and `n_complete` (genes measured in
 #'   all experiments).
 #' @examples
@@ -34,6 +35,10 @@
 itv_cluster <- function(x, min_exps = 0, insignif_to_zero = FALSE,
                         method = "ward.D2", boot_iter = 100) {
   check_itv(x)
+  check_number(min_exps, "min_exps", 0, whole = TRUE)
+  check_flag(insignif_to_zero, "insignif_to_zero")
+  check_hclust_method(method, "method")
+  check_number(boot_iter, "boot_iter", 1, whole = TRUE)
   complete <- rowSums(!is.finite(x$logFC) | is.na(x$FDR)) == 0
   keep <- complete & rowSums(x$deg) >= min_exps
   X <- x$logFC[keep, , drop = FALSE]
@@ -58,6 +63,7 @@ itv_cluster <- function(x, min_exps = 0, insignif_to_zero = FALSE,
 
   tree <- stats::hclust(stats::dist(S), method = method)
   structure(list(tree = tree, experiments = rownames(S),
+                 numbers = match(rownames(S), colnames(x$deg)),
                  support = clade_support(S, tree, method, boot_iter),
                  n_genes = ncol(S), n_complete = sum(complete),
                  min_exps = min_exps, boot_iter = boot_iter),
@@ -78,16 +84,19 @@ print.itv_cluster <- function(x, ...) {
 #' percent, at its node.
 #'
 #' @param x An `itv_cluster` object from [itv_cluster()].
-#' @param labels Leaf labels, one per experiment in `x$experiments`.
+#' @param labels Optional character vector named by experiment, see
+#'   [itv_plot_totals()]. Each leaf is labelled with the experiment number
+#'   (its position in the data that was clustered) and this label (by
+#'   default, the experiment name).
 #' @param main Plot title.
 #' @param support_col Colour of the support values; `NA` hides them.
 #' @param ... Passed to [plot()] for the dendrogram.
 #' @return `x`, invisibly.
 #' @export
-plot.itv_cluster <- function(x, labels = x$experiments, main = NULL,
+plot.itv_cluster <- function(x, labels = NULL, main = NULL,
                              support_col = "firebrick", ...) {
-  if (length(labels) != length(x$experiments))
-    stop("labels must have one entry per experiment in x$experiments.", call. = FALSE)
+  numbers <- if (is.null(x$numbers)) seq_along(x$experiments) else x$numbers
+  labels <- paste(numbers, resolve_labels(labels, x$experiments))
   if (is.null(main))
     main <- sprintf("%s on %d genes; support, %%, from %d replicates",
                     x$tree$method, x$n_genes, x$boot_iter)

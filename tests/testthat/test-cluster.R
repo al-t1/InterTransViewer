@@ -100,3 +100,11 @@ test_that("the example data separates root and shoot experiments", {
   expect_equal(length(unique(groups[5:7])), 1)
   expect_false(groups[1] == groups[5])
 })
+
+test_that("itv_cluster checks its arguments", {
+  x <- itv_read(example_file())
+  expect_error(itv_cluster(x, min_exps = -1), "'min_exps'")
+  expect_error(itv_cluster(x, boot_iter = 0), "'boot_iter'")
+  expect_error(itv_cluster(x, method = "ward"), "'method' must be one of")
+  expect_error(itv_cluster(x, insignif_to_zero = "no"), "'insignif_to_zero'")
+})

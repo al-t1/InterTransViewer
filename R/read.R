@@ -15,20 +15,15 @@
 #'   the header, semicolon, comma and tab are tried, and the only one that
 #'   fits is used, with a message.
 #' @param FDR_cutoff,logFC_cutoff DEG definition, see [itv()].
-#' @param metadata Optional experiment descriptions: a data frame, or the
-#'   path of a file read with [itv_read_metadata()]. See [itv_add_metadata()].
 #' @return An object of class `itv`.
 #' @examples
 #' f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
 #' x <- itv_read(f)
 #' x
 #' @export
-itv_read <- function(file, sep = ";", FDR_cutoff = 0.05, logFC_cutoff = 0,
-                     metadata = NULL) {
+itv_read <- function(file, sep = ";", FDR_cutoff = 0.05, logFC_cutoff = 0) {
   p <- read_profiles(file, sep)
-  x <- itv(p$logFC, p$FDR, FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff)
-  if (!is.null(metadata)) x <- itv_add_metadata(x, metadata)
-  x
+  itv(p$logFC, p$FDR, FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff)
 }
 
 ## Pick the column separator for a profiles table: `sep` if it splits the
@@ -118,6 +113,7 @@ read_profiles <- function(file, sep = ";") {
             "Check the column order.", call. = FALSE)
 
   exps <- sub("^logFC[._ ]?|[._ ]?logFC$", "", fc_names, ignore.case = TRUE)
+  check_pairs(exps, fc_names, fdr_names, fc_cols)
   exps[exps == ""] <- paste0("exp", which(exps == ""))
   exps <- make.unique(exps)
   colnames(logFC) <- colnames(FDR) <- exps
@@ -125,4 +121,23 @@ read_profiles <- function(file, sep = ";") {
   if (any(FDR < 0 | FDR > 1, na.rm = TRUE))
     warning("Some FDR values are outside [0, 1]; check the column order.", call. = FALSE)
   list(logFC = logFC, FDR = FDR)
+}
+
+## Stop if an FDR column names a different experiment than the logFC column
+## before it, e.g. logFC_a followed by FDR_b. Only checked where the FDR
+## and logFC headers both have a recognised prefix or suffix and both names
+## are left non-empty.
+check_pairs <- function(fc_exps, fc_names, fdr_names, fc_cols) {
+  tag <- "(FDR|padj|p[._]?adj|adj[._]?P[._]?Val|q[._]?val(ue)?|p[._]?val(ue)?)"
+  fdr_exps <- sub(paste0("^", tag, "[._ ]?|[._ ]?", tag, "$"), "", fdr_names,
+                  ignore.case = TRUE)
+  comparable <- fdr_exps != fdr_names & fc_exps != fc_names &
+    nzchar(fdr_exps) & nzchar(fc_exps)
+  bad <- comparable & fc_exps != fdr_exps
+  if (any(bad))
+    stop("Name mismatch between ",
+         paste0("'", fc_names[bad], "' (column ", fc_cols[bad], ") and '",
+                fdr_names[bad], "' (column ", fc_cols[bad] + 1, ")", collapse = "; "),
+         ". Each logFC column must be followed by the FDR column of the same ",
+         "experiment.", call. = FALSE)
 }

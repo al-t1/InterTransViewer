@@ -1,0 +1,12 @@
+test_that("argument checks accept valid values and name the bad argument", {
+  expect_silent(check_number(0.05, "a", 0, 1, min_open = TRUE))
+  expect_error(check_number(0, "a", 0, 1, min_open = TRUE), "'a' must be a number in (0, 1]", fixed = TRUE)
+  expect_error(check_number(2.5, "n", 0, whole = TRUE), "'n' must be a whole number >= 0")
+  expect_error(check_number(c(1, 2), "n"), "'n'")
+  expect_error(check_number(Inf, "n"), "'n'")
+  expect_silent(check_number(3, "n", 1, whole = TRUE))
+  expect_error(check_flag(NA, "f"), "'f' must be TRUE or FALSE")
+  expect_error(check_string("", "s"), "'s'")
+  expect_error(check_hclust_method("ward", "m"), "'m' must be one of")
+  expect_silent(check_hclust_method("ward.D2", "m"))
+})

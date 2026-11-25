@@ -9,8 +9,7 @@
 A typical analysis:
 \enumerate{
   \item [itv_read()] reads a table of logFC/FDR pairs into an `itv` object
-    and calls DEGs; [itv_subset()] keeps some experiments;
-    [itv_add_metadata()] attaches experiment descriptions.
+    and calls DEGs; [itv_subset()] keeps some experiments.
   \item [itv_summary()] gives the number of DEGs, the number and percent of
     experiment-specific DEGs, and the R metric per experiment;
     [itv_specific()], [itv_signif()] and [itv_joint_degs()] list the genes.
@@ -22,6 +21,12 @@ A typical analysis:
     experiments; [itv_plot_ci()] draws the intervals.
 }
 [itv_run()] does all of this for one file and writes tables and PDFs.
+}
+\details{
+Experiments are named by the logFC column headers of the profiles table.
+The plots take an optional `labels` argument, a character vector named by
+experiment, for longer labels built from your own description of the
+experiments.
 }
 \references{
 Tyapkin A.V., Lavrekha V.V., Ubogoeva E.V., Oshchepkov D.Yu.,

@@ -6,27 +6,43 @@
 #' @param x An [itv] object, or a data frame from [itv_summary()].
 #' @param value `"specific_percent"` or `"R"`.
 #' @param main Title shown above both panels.
+#' @param labels Optional character vector named by experiment, e.g. built
+#'   from a table describing the experiments; see the example. Each bar is
+#'   labelled with the experiment number and this label (by default, the
+#'   experiment name). Entries for other experiments are ignored.
 #' @return The summary data frame, invisibly.
 #' @examples
 #' f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
-#' itv_plot_totals(itv_read(f), "R", main = "Example")
+#' x <- itv_read(f)
+#' itv_plot_totals(x, "R", main = "Example")
+#'
+#' ## Labels from a description of the experiments
+#' m <- read.delim(system.file("extdata", "example_description.csv",
+#'                             package = "InterTransViewer"), sep = ";")
+#' labels <- setNames(paste(m$Organ, m$Time, m$Method), m$experiment)
+#' itv_plot_totals(x, "R", main = "Example", labels = labels)
 #' @export
-itv_plot_totals <- function(x, value = c("specific_percent", "R"), main = "") {
+itv_plot_totals <- function(x, value = c("specific_percent", "R"), main = "",
+                            labels = NULL) {
   value <- match.arg(value)
   tab <- if (is.data.frame(x)) x else itv_summary(x)
   value_title <- if (value == "R") "R metric" else "Experiment-specific DEGs, %"
+  labels <- paste(tab$N, resolve_labels(labels, tab$experiment))
   op <- graphics::par(no.readonly = TRUE)
   on.exit(graphics::par(op))
-  graphics::layout(matrix(1:2, 1), widths = c(1, 1.4))
+  ## The label margin is sized to the longest label; the two bar panels share
+  ## the rest of the device width equally.
+  label_in <- max(graphics::strwidth(labels, units = "inches", cex = 0.8)) + 0.3
+  plot_in <- max(graphics::par("din")[1] - label_in, 1)
+  graphics::layout(matrix(1:2, 1), widths = c(plot_in / 2, plot_in / 2 + label_in))
   graphics::par(mar = c(3, 1, 4, 0.5))
   graphics::barplot(rev(tab$total), horiz = TRUE, col = "lightgreen",
                     xlim = c(max(tab$total, 1), 0),
                     main = paste0("Number of DEGs\n", main))
-  graphics::par(mar = c(3, 13, 4, 1))
+  graphics::par(mai = c(graphics::par("mai")[1], label_in, graphics::par("mai")[3:4]))
   b <- graphics::barplot(rev(tab[[value]]), horiz = TRUE, col = "grey",
                          main = paste0(value_title, "\n", main))
-  graphics::mtext(rev(paste(tab$N, tab$experiment)), side = 2, at = b,
-                  las = 2, line = 0.3, cex = 0.8)
+  graphics::mtext(rev(labels), side = 2, at = b, las = 2, line = 0.3, cex = 0.8)
   invisible(tab)
 }
 
@@ -34,13 +50,16 @@ itv_plot_totals <- function(x, value = c("specific_percent", "R"), main = "") {
 #'
 #' Rows and columns are ordered by hierarchical clustering of the rows of the
 #' similarity matrix (Euclidean distance), as in InterTransViewer 0.1.
-#' Experiments without DEGs are left out with a warning. Draws on the
-#' current device.
+#' Experiments without DEGs are left out with a warning. Each row and column
+#' is labelled with the experiment number (its position in `x`) and its
+#' label. Draws on the current device.
 #'
 #' @param x An [itv] object, or a matrix from [itv_similarity()].
 #' @param metric Used when `x` is an `itv` object: `"overlap"` or `"jaccard"`.
 #' @param hclust_method Agglomeration method for [stats::hclust()].
 #' @param main Plot title.
+#' @param labels Optional character vector named by experiment, see
+#'   [itv_plot_totals()]. By default, the experiment names.
 #' @return The value of [stats::heatmap()] invisibly, or `NULL` if fewer than
 #'   2 experiments have DEGs.
 #' @examples
@@ -48,24 +67,30 @@ itv_plot_totals <- function(x, value = c("specific_percent", "R"), main = "") {
 #' itv_plot_heatmap(itv_read(f))
 #' @export
 itv_plot_heatmap <- function(x, metric = c("overlap", "jaccard"),
-                             hclust_method = "complete", main = NULL) {
+                             hclust_method = "complete", main = NULL, labels = NULL) {
   metric <- match.arg(metric)
+  check_hclust_method(hclust_method, "hclust_method")
   S <- if (is.matrix(x) && is.numeric(x)) x else itv_similarity(x, metric)
+  if (is.null(rownames(S))) dimnames(S) <- rep(list(paste0("exp", seq_len(nrow(S)))), 2)
+  lab <- paste(seq_len(nrow(S)), resolve_labels(labels, rownames(S)))
   if (is.null(main)) main <- metric
   empty <- is.na(diag(S))
   if (any(empty)) {
     warning("Heatmap: experiments without DEGs were left out: ",
             paste(rownames(S)[empty], collapse = ", "), call. = FALSE)
     S <- S[!empty, !empty, drop = FALSE]
+    lab <- lab[!empty]
   }
   if (nrow(S) < 2) {
     warning("Heatmap needs at least 2 experiments with DEGs; not drawn.", call. = FALSE)
     return(invisible(NULL))
   }
+  dimnames(S) <- list(lab, lab)
+  margin <- max(11, 0.6 * max(nchar(lab)))
   invisible(stats::heatmap(S, symm = TRUE, scale = "none", zlim = c(0, 1),
                            hclustfun = function(d) stats::hclust(d, method = hclust_method),
                            col = grDevices::hcl.colors(50, "YlOrRd", rev = TRUE),
-                           margins = c(11, 11), main = main,
+                           margins = c(margin, margin), main = main,
                            xlab = "colour: 0 (light) to 1 (dark)"))
 }
 

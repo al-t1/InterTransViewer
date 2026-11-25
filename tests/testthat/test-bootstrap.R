@@ -75,3 +75,18 @@ test_that("itv_ci gives percentile intervals, sizes and zero flags", {
   b2 <- itv_bootstrap(random_deg(), iter = 10, progress = FALSE)
   expect_equal(itv_ci(b2)$k, 5:1)
 })
+
+test_that("comparing sets measured on different genes gives a warning", {
+  a <- toy_deg()
+  b <- toy_deg()[1:4, ]
+  expect_warning(itv_bootstrap(a, b, size1 = 2, sizes2 = 2, iter = 2, progress = FALSE),
+                 "same genes (5 and 4, 4 shared)", fixed = TRUE)
+  expect_silent(itv_bootstrap(a, a, size1 = 2, sizes2 = 2, iter = 2, progress = FALSE))
+  expect_silent(itv_bootstrap(a, iter = 2, progress = FALSE))
+})
+
+test_that("itv_bootstrap checks its arguments", {
+  expect_error(itv_bootstrap(toy_deg(), iter = 0, progress = FALSE), "'iter'")
+  expect_error(itv_bootstrap(toy_deg(), size1 = 2.5, sizes2 = 1, progress = FALSE), "'size1'")
+  expect_error(itv_bootstrap(toy_deg(), sizes2 = 1.5, progress = FALSE), "'sizes2'")
+})

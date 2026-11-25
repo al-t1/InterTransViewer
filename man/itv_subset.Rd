@@ -14,7 +14,7 @@ itv_subset(x, experiments)
 numbers and repeated experiments are errors.}
 }
 \value{
-An [itv] object with the selected experiments (and metadata rows).
+An [itv] object with the selected experiments.
 }
 \description{
 Keep some experiments

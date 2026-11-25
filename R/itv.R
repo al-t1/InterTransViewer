@@ -20,7 +20,6 @@
 #'   \item{deg}{logical matrix of DEG calls;}
 #'   \item{measured}{logical matrix, `TRUE` where the FDR is not missing.
 #'     Kept for reference; the indicators treat unmeasured genes as not DE;}
-#'   \item{metadata}{experiment descriptions or `NULL`, see [itv_add_metadata()];}
 #'   \item{FDR_cutoff, logFC_cutoff}{the DEG definition.}
 #' @examples
 #' lfc <- matrix(c(2, -1, 0.1, 3, 0.5, -2), 3,
@@ -44,16 +43,12 @@ itv <- function(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0) {
   if (anyDuplicated(colnames(logFC))) stop("Experiment names must be unique.", call. = FALSE)
   if (anyDuplicated(rownames(logFC))) stop("Gene IDs must be unique.", call. = FALSE)
   dimnames(FDR) <- dimnames(logFC)
-  if (!is.numeric(FDR_cutoff) || length(FDR_cutoff) != 1 || is.na(FDR_cutoff) ||
-      FDR_cutoff <= 0 || FDR_cutoff > 1)
-    stop("FDR_cutoff must be a number in (0, 1].", call. = FALSE)
-  if (!is.numeric(logFC_cutoff) || length(logFC_cutoff) != 1 || is.na(logFC_cutoff) ||
-      logFC_cutoff < 0)
-    stop("logFC_cutoff must be a number >= 0.", call. = FALSE)
+  check_number(FDR_cutoff, "FDR_cutoff", 0, 1, min_open = TRUE)
+  check_number(logFC_cutoff, "logFC_cutoff", 0)
 
   structure(list(logFC = logFC, FDR = FDR,
                  deg = call_degs(logFC, FDR, FDR_cutoff, logFC_cutoff),
-                 measured = !is.na(FDR), metadata = NULL,
+                 measured = !is.na(FDR),
                  FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff),
             class = "itv")
 }
@@ -77,8 +72,6 @@ print.itv <- function(x, ...) {
   if (no_fc > 0) cat("DEG calls without a logFC: ", no_fc, "\n", sep = "")
   cat("Experiments: ", paste(utils::head(exps, 6), collapse = ", "),
       if (length(exps) > 6) ", ...", "\n", sep = "")
-  cat("Metadata: ", if (is.null(x$metadata)) "none" else
-        paste(ncol(x$metadata), "columns"), "\n", sep = "")
   invisible(x)
 }
 
@@ -98,7 +91,7 @@ itv_experiments <- function(x) {
 #' @param experiments Experiment names, or numbers in the order of
 #'   [itv_experiments()]. The result follows this order. Unknown names or
 #'   numbers and repeated experiments are errors.
-#' @return An [itv] object with the selected experiments (and metadata rows).
+#' @return An [itv] object with the selected experiments.
 #' @examples
 #' f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
 #' x <- itv_read(f)
@@ -110,10 +103,6 @@ itv_subset <- function(x, experiments) {
   idx <- select_experiments(experiments, colnames(x$deg), "experiments",
                             allow_numbers = TRUE)
   for (m in c("logFC", "FDR", "deg", "measured")) x[[m]] <- x[[m]][, idx, drop = FALSE]
-  if (!is.null(x$metadata)) {
-    x$metadata <- x$metadata[idx, , drop = FALSE]
-    rownames(x$metadata) <- NULL
-  }
   x
 }
 
@@ -141,6 +130,27 @@ select_experiments <- function(sel, available, what = "selection",
   if (length(idx) == 0) stop(what, " is empty.", call. = FALSE)
   if (anyDuplicated(idx)) stop(what, " lists an experiment more than once.", call. = FALSE)
   idx
+}
+
+## Plot labels for the experiments `exps`. `labels` is NULL (use the
+## experiment names) or a character vector named by experiment; extra entries
+## are ignored, so one vector serves every subset of the experiments.
+resolve_labels <- function(labels, exps) {
+  if (is.null(labels)) return(exps)
+  check_labels(labels)
+  missing <- setdiff(exps, names(labels))
+  if (length(missing))
+    stop("'labels' has no entry for: ", paste(missing, collapse = ", "), call. = FALSE)
+  unname(labels[exps])
+}
+
+check_labels <- function(labels) {
+  nms <- names(labels)
+  if (!is.character(labels) || is.null(nms) || anyNA(labels) || anyNA(nms) ||
+      any(!nzchar(nms)) || anyDuplicated(nms))
+    stop("'labels' must be a character vector named by experiment, e.g. ",
+         "c(root_1h_A = \"Root, 1 h\"); see setNames().", call. = FALSE)
+  invisible(labels)
 }
 
 check_itv <- function(x) {

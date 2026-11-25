@@ -4,12 +4,15 @@
 \alias{plot.itv_cluster}
 \title{Plot a clustering of experiments}
 \usage{
-\method{plot}{itv_cluster}(x, labels = x$experiments, main = NULL, support_col = "firebrick", ...)
+\method{plot}{itv_cluster}(x, labels = NULL, main = NULL, support_col = "firebrick", ...)
 }
 \arguments{
 \item{x}{An `itv_cluster` object from [itv_cluster()].}
 
-\item{labels}{Leaf labels, one per experiment in `x$experiments`.}
+\item{labels}{Optional character vector named by experiment, see
+[itv_plot_totals()]. Each leaf is labelled with the experiment number
+(its position in the data that was clustered) and this label (by
+default, the experiment name).}
 
 \item{main}{Plot title.}
 

@@ -9,7 +9,7 @@ itv_run(
   out_dir = file.path("Results", condition),
   condition = sub("(_profiles)?\\\\.[a-z]+$", "", basename(file), ignore.case = TRUE),
   sep = ";",
-  metadata = NULL,
+  labels = NULL,
   experiments = NULL,
   FDR_cutoff = 0.05,
   logFC_cutoff = 0,
@@ -36,9 +36,9 @@ without "_Profiles" and the extension.}
 
 \item{sep}{Column separator of `file`, see [itv_read()].}
 
-\item{metadata}{Optional path of an experiment description table, see
-[itv_add_metadata()]. Rows follow the experiments in `file` (before
-`experiments` is applied) or are matched by a column of experiment names.}
+\item{labels}{Optional plot labels: a character vector named by
+experiment, see [itv_plot_totals()]. It must have an entry for every
+experiment analysed; other entries are ignored.}
 
 \item{experiments}{Optional experiments to analyse, by name or number,
 see [itv_subset()].}
@@ -71,26 +71,40 @@ Invisibly, a list with `itv` (the data), `summary`, `similarity`,
 }
 \description{
 Reads a profiles table, computes all indicators, and writes tables
-(semicolon-separated) and PDFs to `out_dir`, with names starting with
+(tab-separated, unquoted) and PDFs to `out_dir`, with names starting with
 `condition`:
-`SignifTable.csv`, `JointDEGs.csv`, `TotalSpecificR.csv`,
-`SpecificDEGs.csv`, `TotalSpecificDEG.pdf`, `Rmetric.pdf`,
-`Description_Updated.csv` (with `metadata`), `SimMatrix_<metric>.csv`,
+`SignifTable.tsv`, `JointDEGs.tsv`, `TotalSpecificR.tsv`,
+`SpecificDEGs.tsv`, `TotalSpecificDEG.pdf`, `Rmetric.pdf`,
+`SimMatrix_<metric>.tsv`,
 `Heatmap_<metric>.pdf`, `Clustering_min<min_exps>.pdf`,
-`Bootstrap[_<subset>].rds`, `Bootstrap_CI[_<subset>].csv`,
+`Bootstrap[_<subset>].rds`, `Bootstrap_CI[_<subset>].tsv`,
 `Bootstrap_CI.pdf` and `run_info.txt` (settings and session info).
+Tabs and line breaks inside text values are written as spaces.
 }
 \details{
-Problems in one step (metadata, clustering, a bootstrap subset) give a
-warning and the other steps still run.
+Tables identify experiments by name; the plots label them with their
+number and `labels`. To add a description of the experiments to the
+results, join it to `summary` by experiment name, e.g.
+`merge(description, res$summary, by = "experiment")`.
+
+All settings are checked before any output is written. If `out_dir`
+already holds files, a warning says so; files with the same names are
+overwritten and other files are left as they are.
+Problems in one step (clustering, a bootstrap subset) give a warning and
+the other steps still run.
 }
 \examples{
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
-m <- system.file("extdata", "example_description.csv", package = "InterTransViewer")
-res <- itv_run(f, out_dir = file.path(tempdir(), "itv_example"), metadata = m,
+m <- read.delim(system.file("extdata", "example_description.csv",
+                            package = "InterTransViewer"), sep = ";")
+res <- itv_run(f, out_dir = file.path(tempdir(), "itv_example"),
+               labels = setNames(paste(m$Organ, m$Time, m$Method), m$experiment),
                cluster_boot_iter = 20, boot_iter = 100,
                boot_subsets = list(root = c("root_1h_A", "root_4h_A",
                                             "root_4h_B", "root_8h_B")))
 res$summary
 list.files(res$out_dir)
+
+## The description with this run's results
+merge(m, res$summary, by = "experiment")
 }

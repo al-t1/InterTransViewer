@@ -36,20 +36,19 @@ ID;logFC_root_1h_A;FDR_root_1h_A;logFC_root_4h_A;FDR_root_4h_A;...
 GENE0001;-4.657;1.849e-51;0.03106;0.9708;...
 ```
 
-Experiment names come from the logFC headers. An empty cell or `NA` means the
-gene is not DE in that experiment. Optionally, a second table describes the
-experiments (method, organ, time, ...), one row per experiment in the same order.
+Experiment names come from the logFC headers, so name your columns the way
+you want experiments to appear in the results. An empty cell or `NA` means
+the gene is not DE in that experiment.
 
 ## Usage
 
-All results for one file, written to a folder:
+All results for one file, written to a folder as tab-separated tables and PDFs:
 
 ```r
 library(InterTransViewer)
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
-m <- system.file("extdata", "example_description.csv", package = "InterTransViewer")
 
-res <- itv_run(f, out_dir = "Results/example", metadata = m,
+res <- itv_run(f, out_dir = "Results/example",
                boot_subsets = list(root = c("root_1h_A", "root_4h_A",
                                             "root_4h_B", "root_8h_B")))
 res$summary
@@ -58,13 +57,28 @@ res$summary
 Or step by step:
 
 ```r
-x <- itv_read(f, FDR_cutoff = 0.05, metadata = m)
+x <- itv_read(f, FDR_cutoff = 0.05)
 itv_summary(x)                      # n, specific DEGs, R
 itv_plot_totals(x, "R")
 itv_plot_heatmap(x)                 # similarity index I
 plot(itv_cluster(x))                # clustering with bootstrap support
 ci <- itv_ci(itv_bootstrap(x))      # homogeneity bootstrap
 itv_plot_ci(ci)
+```
+
+### Describing the experiments
+
+The package works with experiment names only. If you have a table that
+describes the experiments, build plot labels from it as a vector named by
+experiment, and join it to the results yourself:
+
+```r
+m <- read.delim(system.file("extdata", "example_description.csv",
+                            package = "InterTransViewer"), sep = ";")
+labels <- setNames(paste(m$Organ, m$Time, m$Method), m$experiment)
+
+res <- itv_run(f, out_dir = "Results/example", labels = labels)
+merge(m, res$summary, by = "experiment")   # descriptions with the results
 ```
 
 A full analysis script to copy and edit:

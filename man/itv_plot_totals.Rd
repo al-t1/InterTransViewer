@@ -4,7 +4,12 @@
 \alias{itv_plot_totals}
 \title{Plot DEG counts with specific DEGs or R}
 \usage{
-itv_plot_totals(x, value = c("specific_percent", "R"), main = "")
+itv_plot_totals(
+  x,
+  value = c("specific_percent", "R"),
+  main = "",
+  labels = NULL
+)
 }
 \arguments{
 \item{x}{An [itv] object, or a data frame from [itv_summary()].}
@@ -12,6 +17,11 @@ itv_plot_totals(x, value = c("specific_percent", "R"), main = "")
 \item{value}{`"specific_percent"` or `"R"`.}
 
 \item{main}{Title shown above both panels.}
+
+\item{labels}{Optional character vector named by experiment, e.g. built
+from a table describing the experiments; see the example. Each bar is
+labelled with the experiment number and this label (by default, the
+experiment name). Entries for other experiments are ignored.}
 }
 \value{
 The summary data frame, invisibly.
@@ -22,5 +32,12 @@ experiment-specific DEGs or the R metric. Draws on the current device.
 }
 \examples{
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
-itv_plot_totals(itv_read(f), "R", main = "Example")
+x <- itv_read(f)
+itv_plot_totals(x, "R", main = "Example")
+
+## Labels from a description of the experiments
+m <- read.delim(system.file("extdata", "example_description.csv",
+                            package = "InterTransViewer"), sep = ";")
+labels <- setNames(paste(m$Organ, m$Time, m$Method), m$experiment)
+itv_plot_totals(x, "R", main = "Example", labels = labels)
 }
