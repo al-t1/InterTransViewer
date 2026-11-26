@@ -15,13 +15,16 @@ set.seed(42)
 ## the experiments. Use labels <- NULL to label plots with experiment names.
 description <- read.delim(system.file("extdata", "example_description.csv",
                                       package = "InterTransViewer"), sep = ";")
-labels <- setNames(paste(description$Organ, description$Time, description$Method),
-                   description$experiment)
+labels <- itv_labels(description, c("Organ", "Time", "Method"))
 
 ## ===== 1. Data ===============================================================
 x <- itv_read(input_file, FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff)
+## Or, from one limma/DESeq2/edgeR result per experiment in a folder:
+## x <- itv_weave("DE_results", FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff)
 x
-## x <- itv_subset(x, c("root_1h_A", "root_4h_A"))   # keep some experiments
+## Keep some experiments:
+## x <- itv_subset(x, c("root_1h_A", "root_4h_A"))
+## x <- itv_filter(x, Organ == "Root", min_degs = 100, description = description)
 
 ## ===== 2. DEG counts, specific DEGs, R =======================================
 tsr <- itv_summary(x)
@@ -32,7 +35,13 @@ itv_plot_totals(x, "specific_percent", labels = labels)
 itv_plot_totals(x, "R", labels = labels)
 
 ## ===== 3. Similarity of DEG lists ============================================
-sim <- itv_similarity(x, "overlap")
+## On the genes tested in both experiments of each pair (universe = "pair");
+## signed = TRUE counts only genes changing in the same direction.
+pairs <- itv_pairs(x)
+head(pairs[order(-pairs$overlap_corrected), ])   # the pairs most above chance
+## Overlap index I corrected for chance (0 = chance level); metric = "jaccard"
+## for Jaccard, chance_corrected = FALSE for the raw values.
+sim <- itv_similarity(x, "overlap", chance_corrected = TRUE)
 round(sim, 2)
 itv_plot_heatmap(sim, labels = labels)
 

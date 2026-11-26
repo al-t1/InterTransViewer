@@ -6,19 +6,28 @@
 \usage{
 itv_run(
   file,
+  settings = NULL,
   out_dir = file.path("Results", condition),
-  condition = sub("(_profiles)?\\\\.[a-z]+$", "", basename(file), ignore.case = TRUE),
+  condition = default_condition(file),
   sep = ";",
   labels = NULL,
   experiments = NULL,
   FDR_cutoff = 0.05,
   logFC_cutoff = 0,
+  n_genes = NULL,
   seed = 42,
-  heatmap_metric = c("overlap", "jaccard"),
+  similarity_metric = c("overlap", "jaccard"),
+  chance_corrected = TRUE,
+  universe = c("pair", "all", "none"),
+  signed = FALSE,
   heatmap_hclust = "complete",
   cluster_method = "ward.D2",
   cluster_min_exps = 0,
   cluster_insignif_to_zero = FALSE,
+  cluster_scale_exps_by_range = TRUE,
+  cluster_center_genes = FALSE,
+  cluster_scale_genes_by_SD = TRUE,
+  cluster_distance = c("euclidean", "pearson", "spearman"),
   cluster_boot_iter = 100,
   bootstrap = TRUE,
   boot_iter = 1000,
@@ -27,12 +36,18 @@ itv_run(
 )
 }
 \arguments{
-\item{file}{Path to the profiles table, see [itv_read()].}
+\item{file}{Path to the profiles table, see [itv_read()], or an [itv]
+object, e.g. from [itv_weave()] or [itv_combine()]; its DEGs are called
+again with `FDR_cutoff` and `logFC_cutoff`.}
+
+\item{settings}{Optional settings from [itv_settings()]; arguments given
+in the call override them.}
 
 \item{out_dir}{Output folder; created if needed.}
 
 \item{condition}{Prefix for output files. By default the file name
-without "_Profiles" and the extension.}
+without "_Profiles" and the extension; needed when `file` is an itv
+object.}
 
 \item{sep}{Column separator of `file`, see [itv_read()].}
 
@@ -43,17 +58,23 @@ experiment analysed; other entries are ignored.}
 \item{experiments}{Optional experiments to analyse, by name or number,
 see [itv_subset()].}
 
-\item{FDR_cutoff, logFC_cutoff}{DEG definition, see [itv()].}
+\item{FDR_cutoff, logFC_cutoff, n_genes}{DEG definition and, for a table
+of DEGs only, the number of genes tested; see [itv()]. For an itv
+object, `n_genes = NULL` keeps its own.}
 
 \item{seed}{Random seed for the bootstraps, or `NULL` to use the current
 random state. The previous random state is restored afterwards.}
 
-\item{heatmap_metric}{`"overlap"` or `"jaccard"`.}
+\item{similarity_metric, chance_corrected, universe, signed}{How DEG lists
+are compared, see [itv_similarity()]. By default the overlap index I,
+corrected for chance, on the genes tested in both experiments of a
+pair. All metrics, raw and corrected, are in `res$pairs`.}
 
 \item{heatmap_hclust}{Agglomeration method used to order the heatmap.}
 
-\item{cluster_method, cluster_min_exps, cluster_insignif_to_zero, cluster_boot_iter}{Passed to [itv_cluster()] as `method`, `min_exps`, `insignif_to_zero`
-and `boot_iter`.}
+\item{cluster_method, cluster_min_exps, cluster_insignif_to_zero, cluster_scale_exps_by_range, cluster_center_genes, cluster_scale_genes_by_SD, cluster_distance, cluster_boot_iter}{Passed to [itv_cluster()] as `method`, `min_exps`, `insignif_to_zero`,
+`scale_exps_by_range`, `center_genes`, `scale_genes_by_SD`, `distance` and
+`boot_iter`.}
 
 \item{bootstrap}{Run the homogeneity bootstrap.}
 
@@ -66,8 +87,13 @@ skipped with a warning.}
 \item{progress}{Show bootstrap progress bars.}
 }
 \value{
-Invisibly, a list with `itv` (the data), `summary`, `similarity`,
-  `cluster`, `bootstrap` and `ci` (lists by set) and `out_dir`.
+Invisibly, an object of class `itv_run`: a list with `condition`,
+  `itv` (the data), `summary`, `similarity` (the matrix written), `pairs`
+  (all metrics for every pair, see [itv_pairs()]; not written to a file),
+  `cluster`, `bootstrap` and `ci` (lists by set), `out_dir`, `settings`
+  (the settings used, see [itv_settings()]) and `notes` (the warnings
+  given). Printing it shows the summary table, the main results and the
+  warnings.
 }
 \description{
 Reads a profiles table, computes all indicators, and writes tables
@@ -75,8 +101,9 @@ Reads a profiles table, computes all indicators, and writes tables
 `condition`:
 `SignifTable.tsv`, `JointDEGs.tsv`, `TotalSpecificR.tsv`,
 `SpecificDEGs.tsv`, `TotalSpecificDEG.pdf`, `Rmetric.pdf`,
-`SimMatrix_<metric>.tsv`,
-`Heatmap_<metric>.pdf`, `Clustering_min<min_exps>.pdf`,
+`SimMatrix_<metric>.tsv` and `Heatmap_<metric>.pdf` (e.g.
+`overlap_corrected`, or `overlap` without chance correction),
+`Clustering_min<min_exps>.pdf`,
 `Bootstrap[_<subset>].rds`, `Bootstrap_CI[_<subset>].tsv`,
 `Bootstrap_CI.pdf` and `run_info.txt` (settings and session info).
 Tabs and line breaks inside text values are written as spaces.
@@ -98,7 +125,7 @@ f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer"
 m <- read.delim(system.file("extdata", "example_description.csv",
                             package = "InterTransViewer"), sep = ";")
 res <- itv_run(f, out_dir = file.path(tempdir(), "itv_example"),
-               labels = setNames(paste(m$Organ, m$Time, m$Method), m$experiment),
+               labels = itv_labels(m, c("Organ", "Time", "Method")),
                cluster_boot_iter = 20, boot_iter = 100,
                boot_subsets = list(root = c("root_1h_A", "root_4h_A",
                                             "root_4h_B", "root_8h_B")))

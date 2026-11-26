@@ -44,12 +44,12 @@ test_that("a DEG without logFC is counted but shown as NA", {
 })
 
 test_that("itv_similarity gives the overlap index I and Jaccard", {
-  I <- itv_similarity(toy_itv(), "overlap")
+  I <- itv_similarity(toy_itv(), "overlap", chance_corrected = FALSE)
   expect_equal(unname(diag(I)), c(1, 1, 1))
   expect_equal(I["e1", "e2"], 2 / 3)   # c = 2, min(3, 3) = 3
   expect_equal(I["e1", "e3"], 1)       # c = 1, min(3, 1) = 1
   expect_true(isSymmetric(I))
-  J <- itv_similarity(toy_itv(), "jaccard")
+  J <- itv_similarity(toy_itv(), "jaccard", chance_corrected = FALSE)
   expect_equal(J["e1", "e2"], 2 / 4)   # 2 / (3 + 3 - 2)
   expect_equal(J["e1", "e3"], 1 / 3)
   expect_error(itv_similarity(toy_itv(), "cosine"))
@@ -58,12 +58,12 @@ test_that("itv_similarity gives the overlap index I and Jaccard", {
 test_that("itv_similarity gives NA for an experiment without DEGs", {
   I <- itv_similarity(toy_itv(extra_empty = TRUE))
   expect_true(all(is.na(I["e4", ])))
-  expect_equal(I[1:3, 1:3], itv_similarity(toy_itv()))
+  expect_equal(I[1:3, 1:3], unclass(itv_similarity(toy_itv()))[, ])
 })
 
 test_that("itv_similarity matches a direct set computation", {
   x <- itv_read(example_file())
-  I <- itv_similarity(x)
+  I <- itv_similarity(x, chance_corrected = FALSE)
   a <- which(x$deg[, "root_1h_A"]); b <- which(x$deg[, "shoot_4h_D"])
   expect_equal(I["root_1h_A", "shoot_4h_D"], length(intersect(a, b)) / min(length(a), length(b)))
 })

@@ -2,24 +2,89 @@
 % Please edit documentation in R/summary.R
 \name{itv_similarity}
 \alias{itv_similarity}
-\title{Pairwise similarity of DEG lists}
+\alias{itv_pairs}
+\title{Similarity of DEG lists}
 \usage{
-itv_similarity(x, metric = c("overlap", "jaccard"))
+itv_similarity(
+  x,
+  metric = c("overlap", "jaccard"),
+  chance_corrected = TRUE,
+  universe = c("pair", "all", "none"),
+  signed = FALSE
+)
+
+itv_pairs(x, universe = c("pair", "all", "none"), signed = FALSE)
 }
 \arguments{
-\item{x}{An [itv] object, or a logical matrix of DEG calls.}
+\item{x}{An [itv] object, or a logical matrix of DEG calls (then every
+gene counts as tested everywhere, and `signed` is not available).}
 
-\item{metric}{`"overlap"` or `"jaccard"`.}
+\item{metric}{`"overlap"` (index I) or `"jaccard"`.}
+
+\item{chance_corrected}{Correct the metric for chance, see Details.}
+
+\item{universe}{The genes each pair is compared on: `"pair"`, those
+tested (with an FDR) in both experiments; `"all"`, those tested in
+every experiment; `"none"`, all genes, an untested gene counting as not
+DE. Genes outside the table (see `n_genes` in [itv()]) count as tested
+everywhere.}
+
+\item{signed}{If `TRUE`, a gene is shared only if it changes in the same
+direction in both experiments (a DEG without a logFC is then never
+shared), and the expectation is \eqn{(up_A up_B + down_A down_B) / G}.}
 }
 \value{
-A symmetric experiments x experiments matrix.
+`itv_similarity()`: a symmetric experiments x experiments matrix,
+  with attributes `metric` and `chance_corrected`; pairs with an
+  experiment without DEGs are `NA`. `itv_pairs()`: a data
+  frame with one row per pair: `experiment_a`, `experiment_b`, `genes`
+  (G), `n_a`, `n_b` (DEGs among the G genes), `shared`, `shared_same`,
+  `shared_opposite` (shared DEGs, and those changing in the same and in
+  opposite directions), `overlap`, `overlap_expected`,
+  `overlap_corrected`, `jaccard`, `jaccard_expected`,
+  `jaccard_corrected`, `enrichment` (shared / expected shared) and
+  `p_value` (hypergeometric, one-sided, for `shared`; `NA` if
+  `signed = TRUE`).
 }
 \description{
-With c the number of shared DEGs, the overlap index (the similarity
-index I of Tyapkin et al. 2023) is c / min(|A|, |B|), and the Jaccard
-index is c / |A or B|. Pairs involving an experiment without DEGs are `NA`.
+Compares the DEG lists of each pair of experiments A and B, on the genes
+tested in both (by default). With c the number of shared DEGs:
+\describe{
+  \item{overlap}{the similarity index I of Tyapkin et al. (2023),
+    c / min(|A|, |B|): the Szymkiewicz-Simpson overlap coefficient;}
+  \item{jaccard}{c / |A or B|.}
+}
+With `chance_corrected = TRUE` (the default), each value S becomes
+(S - E) / (1 - E), where E is the value expected if the two lists were
+drawn at random from the G genes tested in both: 0 means chance level, 1
+the largest similarity possible, negative less overlap than chance.
+}
+\details{
+By chance, c is hypergeometric with mean \eqn{E[c] = |A| |B| / G}, so the
+expected overlap is max(|A|, |B|) / G: two long lists overlap a lot even
+without any shared biology. The expected Jaccard is approximated by
+\eqn{E[c] / (|A| + |B| - E[c])}. These expectations treat all genes as
+equally likely to be DE, so they are a lower bar: genes that respond in
+many conditions raise the real overlap.
+
+Chance correction matters when lists are long compared with the genes
+tested; for short lists E is small and the corrected values are close to
+the raw ones.
+
+`itv_similarity()` gives one metric as a matrix; `itv_pairs()` gives all
+of them, raw and corrected, with the expected values and a
+hypergeometric p-value, as one table.
 }
 \examples{
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
-round(itv_similarity(itv_read(f)), 2)
+x <- itv_read(f)
+round(itv_similarity(x), 2)                            # corrected overlap
+round(itv_similarity(x, chance_corrected = FALSE), 2)  # index I as published
+round(itv_similarity(x, "jaccard"), 2)
+head(itv_pairs(x))
+head(itv_pairs(x, signed = TRUE))
+}
+\references{
+Simpson G.G. (1943) Mammals and the nature of continents.
+  American Journal of Science 241:1-31.
 }

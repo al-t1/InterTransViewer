@@ -1,3 +1,90 @@
+# InterTransViewer 0.4.0
+
+## Changes to results
+
+* Similarity is computed on the genes tested (with an FDR) in both
+  experiments of a pair, `universe = "pair"`. Before, a gene that one study
+  did not test (e.g. not on a microarray) counted as "not DE" there, which
+  lowered the similarity of that study to the others. `universe = "none"`
+  gives the old values, `universe = "all"` uses the genes tested in every
+  experiment. Pairs of experiments that tested the same genes are
+  unchanged.
+* Similarity is corrected for chance by default (`chance_corrected = TRUE`
+  in `itv_similarity()`, `itv_plot_heatmap()` and `itv_run()`): each value
+  S becomes (S - E) / (1 - E), where E is its expected value if the two DEG
+  lists were drawn at random from the genes tested in both. 0 means chance
+  level. Two long lists overlap a lot even at random, so this matters when
+  lists are long compared with the genes tested; for short lists the
+  corrected values are close to the raw ones. `chance_corrected = FALSE`
+  gives the index I as published. `itv_run()` now writes
+  `SimMatrix_overlap_corrected.tsv` and `Heatmap_overlap_corrected.pdf` by
+  default; its `heatmap_metric` argument is replaced by `similarity_metric`
+  (`"overlap"` or `"jaccard"`) and `chance_corrected`.
+
+## New features
+
+* `itv_pairs()` gives a table of all pairs of experiments: genes compared,
+  DEGs, shared DEGs (same and opposite direction), the overlap index I (the
+  Szymkiewicz-Simpson overlap coefficient) and the Jaccard index with
+  their expected and chance-corrected values, the enrichment of shared DEGs
+  over chance and a hypergeometric p-value. `itv_run()` returns it as
+  `res$pairs`. Chance-corrected heatmaps use a -1 to 1 scale with white at
+  chance level.
+* `signed = TRUE` counts a gene as shared only if it changes in the same
+  direction in both experiments.
+* `itv_summary()` splits the specific DEGs into `specific_tested` (every
+  other experiment tested the gene and found it not DE) and
+  `specific_untested` (some experiment never tested it, so it may only look
+  specific), and adds `specific_oe`, observed / expected specific DEGs if
+  the lists were independent, next to R. `itv_specific()` gains a `tested`
+  column.
+* `n_genes` in `itv()`, `itv_read()`, `itv_weave()`, `itv_combine()` and
+  `itv_run()`: the number of genes tested, for tables holding only DEGs,
+  used by the chance levels. A table of 100 or more genes that are all DEGs
+  gives a warning suggesting it.
+* `itv_plot_heatmap()` orders experiments by clustering the distances
+  1 - S, where S is the similarity shown, so that neighbours are
+  experiments whose DEG lists overlap. Before, it clustered Euclidean
+  distances between rows of the similarity matrix (`stats::heatmap()`'s
+  default, as in the paper), which can put together two experiments that
+  share few DEGs but are equally unlike the rest. It also draws a colour
+  key, gains `order_by`, to draw several heatmaps in one order, and puts
+  the title in the outer margin so that it can have two lines.
+* `itv_cluster()` gains `scale_exps_by_range` (divide each experiment by
+  its logFC range), `center_genes` and `scale_genes_by_SD` (subtract each
+  gene's mean, divide by its SD; both together z-score the genes) and
+  `distance`
+  (`"euclidean"`, or 1 - r for `"pearson"` or `"spearman"`). The defaults
+  are the method of the paper. Printing and plotting a clustering show how
+  many genes were measured in all experiments, and the help notes that
+  gene-resampling support overstates certainty. `itv_run()` passes them on
+  as `cluster_scale_exps_by_range`, `cluster_center_genes`,
+  `cluster_scale_genes_by_SD` and `cluster_distance`.
+* `itv_settings()` bundles `itv_run()` settings to reuse across datasets:
+  `itv_run(f, settings = s)`. Give only the settings you want to fix;
+  arguments in the call override them. `res$settings` holds the settings a
+  run used, ready for the next dataset.
+* `itv_run()` results print as a report: the summary table, the
+  similarity, clustering and bootstrap results, and any warnings, which are
+  also kept in `res$notes`.
+
+* `itv_weave()` builds an itv object from one differential expression
+  result per experiment: files, a folder, or data frames such as
+  `limma::topTable()`, `DESeq2::results()` or `edgeR::topTags()` output.
+  It finds the ID, logFC and FDR columns (or takes them by name or number,
+  for all experiments or per experiment) and joins the experiments by gene
+  ID, keeping genes missing from some of them. Replaces `DE_weave()` of the
+  0.1 script. Example results are in `inst/extdata/de_results/`.
+* `itv_write()` saves an itv object as a profiles table for `itv_read()`.
+* `itv_run()` also takes an itv object, e.g. from `itv_weave()`.
+* `itv_filter()` keeps experiments by DEG count (`min_degs`, `max_degs`) or
+  by conditions on a description table, e.g.
+  `itv_filter(x, Organ == "Root", description = d)`. Replaces `KeepExps()`.
+* `itv_labels()` builds plot labels from a description table, from column
+  names or a template such as `"{Organ}, {Time}"`.
+* `itv_combine()` joins itv objects, e.g. auxin and ethylene experiments,
+  on all genes or the shared ones.
+
 # InterTransViewer 0.3.0
 
 ## Breaking changes

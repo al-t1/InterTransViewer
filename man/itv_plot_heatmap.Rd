@@ -7,15 +7,22 @@
 itv_plot_heatmap(
   x,
   metric = c("overlap", "jaccard"),
+  chance_corrected = TRUE,
   hclust_method = "complete",
   main = NULL,
-  labels = NULL
+  labels = NULL,
+  universe = c("pair", "all", "none"),
+  signed = FALSE,
+  order_by = NULL
 )
 }
 \arguments{
 \item{x}{An [itv] object, or a matrix from [itv_similarity()].}
 
-\item{metric}{Used when `x` is an `itv` object: `"overlap"` or `"jaccard"`.}
+\item{metric, chance_corrected, universe, signed}{Used when `x` is an `itv`
+object, see [itv_similarity()]. A matrix from [itv_similarity()] carries
+its own metric and correction; for another matrix, `chance_corrected`
+sets the colour scale and `metric` the default title.}
 
 \item{hclust_method}{Agglomeration method for [stats::hclust()].}
 
@@ -23,19 +30,30 @@ itv_plot_heatmap(
 
 \item{labels}{Optional character vector named by experiment, see
 [itv_plot_totals()]. By default, the experiment names.}
+
+\item{order_by}{Optional similarity matrix (with the same experiment
+names) whose clustering (by 1 - similarity) sets the order of rows and
+columns.}
 }
 \value{
 The value of [stats::heatmap()] invisibly, or `NULL` if fewer than
   2 experiments have DEGs.
 }
 \description{
-Rows and columns are ordered by hierarchical clustering of the rows of the
-similarity matrix (Euclidean distance), as in InterTransViewer 0.1.
-Experiments without DEGs are left out with a warning. Each row and column
-is labelled with the experiment number (its position in `x`) and its
-label. Draws on the current device.
+Rows and columns are ordered by hierarchical clustering of the distances
+1 - S between experiments, where S is the similarity shown (or the one
+in `order_by`, so that several heatmaps can share one order): neighbours
+are experiments whose DEG lists overlap. Experiments without DEGs are left
+out with a warning. Each row and column is labelled with the experiment
+number (its position in `x`) and its label. Raw similarities are drawn
+from 0 (light) to 1 (dark); chance-corrected ones from -1 (blue) through
+0 (white, chance level) to 1 (red), values below -1 drawn as -1. Draws on
+the current device.
 }
 \examples{
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
-itv_plot_heatmap(itv_read(f))
+x <- itv_read(f)
+itv_plot_heatmap(x)                                # corrected overlap
+oc <- itv_similarity(x)
+itv_plot_heatmap(x, chance_corrected = FALSE, order_by = oc)   # same order
 }

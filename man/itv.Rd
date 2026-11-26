@@ -4,7 +4,7 @@
 \alias{itv}
 \title{Create an itv object}
 \usage{
-itv(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0)
+itv(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0, n_genes = NULL)
 }
 \arguments{
 \item{logFC, FDR}{Numeric matrices (or data frames) of the same size,
@@ -16,14 +16,24 @@ filled in as `gene1, ...` and `exp1, ...`.}
 
 \item{logFC_cutoff}{A number >= 0, on the scale of `logFC` (usually log2),
 e.g. `log2(1.5)`.}
+
+\item{n_genes}{For a table that holds only DEGs: the number of genes
+tested, e.g. all genes of the genome or array. The genes not in the
+table are taken as tested and not DE in every experiment. Only the
+chance levels use it (the expected similarity in [itv_pairs()] and
+`specific_oe` in [itv_summary()]). `NULL` means the table holds every
+gene tested; a warning is given if every gene in a table of 100 or more
+is a DEG somewhere.}
 }
 \value{
 An object of class `itv`: a list with
   \item{logFC, FDR}{the input matrices;}
   \item{deg}{logical matrix of DEG calls;}
-  \item{measured}{logical matrix, `TRUE` where the FDR is not missing.
-    Kept for reference; the indicators treat unmeasured genes as not DE;}
-  \item{FDR_cutoff, logFC_cutoff}{the DEG definition.}
+  \item{measured}{logical matrix, `TRUE` where the FDR is not missing:
+    the gene was tested in that experiment;}
+  \item{FDR_cutoff, logFC_cutoff}{the DEG definition;}
+  \item{n_genes}{the number of genes tested, or `NULL` if that is the
+    number of rows.}
 }
 \description{
 Holds the logFC and FDR of each gene in each experiment and the DEG calls

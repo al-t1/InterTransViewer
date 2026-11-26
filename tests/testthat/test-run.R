@@ -1,7 +1,7 @@
 expected_files <- function(prefix) {
   paste0(prefix, "_", c("SignifTable.tsv", "JointDEGs.tsv", "TotalSpecificR.tsv",
                         "SpecificDEGs.tsv", "TotalSpecificDEG.pdf", "Rmetric.pdf",
-                        "SimMatrix_overlap.tsv", "Heatmap_overlap.pdf",
+                        "SimMatrix_overlap_corrected.tsv", "Heatmap_overlap_corrected.pdf",
                         "Clustering_min0.pdf", "Bootstrap.rds", "Bootstrap_CI.tsv",
                         "Bootstrap_CI.pdf", "run_info.txt"))
 }
@@ -84,9 +84,9 @@ test_that("itv_run: labels need an entry for every experiment analysed", {
                "named by experiment")
 })
 
-test_that("itv_run uses the condition and heatmap metric in file names", {
-  r <- quick_run(example_file(), condition = "demo", heatmap_metric = "jaccard",
-                 bootstrap = FALSE)
+test_that("itv_run uses the condition and similarity metric in file names", {
+  r <- quick_run(example_file(), condition = "demo", similarity_metric = "jaccard",
+                 chance_corrected = FALSE, bootstrap = FALSE)
   out <- r$value$out_dir
   expect_true(file.exists(file.path(out, "demo_SimMatrix_jaccard.tsv")))
   expect_true(file.exists(file.path(out, "demo_Heatmap_jaccard.pdf")))
@@ -98,7 +98,7 @@ test_that("itv_run writes tab-separated tables that keep semicolons in names", {
   write_toy(f, sep = "\t", exps = c("a;1", "b,2", "c"))
   r <- quick_run(f, sep = "\t", condition = "toy", bootstrap = FALSE)
   out <- file.path(r$value$out_dir, "toy_TotalSpecificR.tsv")
-  expect_equal(unique(utils::count.fields(out, sep = "\t", quote = "")), 6L)
+  expect_equal(unique(utils::count.fields(out, sep = "\t", quote = "")), 9L)
   tab <- utils::read.delim(out, quote = "")
   expect_equal(tab$experiment, c("a;1", "b,2", "c"))
 

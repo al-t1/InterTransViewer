@@ -14,16 +14,19 @@
 #' @param sep Column separator. A semicolon by default. If it does not fit
 #'   the header, semicolon, comma and tab are tried, and the only one that
 #'   fits is used, with a message.
-#' @param FDR_cutoff,logFC_cutoff DEG definition, see [itv()].
+#' @param FDR_cutoff,logFC_cutoff,n_genes DEG definition and, for a table
+#'   of DEGs only, the number of genes tested; see [itv()].
 #' @return An object of class `itv`.
 #' @examples
 #' f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
 #' x <- itv_read(f)
 #' x
 #' @export
-itv_read <- function(file, sep = ";", FDR_cutoff = 0.05, logFC_cutoff = 0) {
+itv_read <- function(file, sep = ";", FDR_cutoff = 0.05, logFC_cutoff = 0,
+                     n_genes = NULL) {
   p <- read_profiles(file, sep)
-  itv(p$logFC, p$FDR, FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff)
+  itv(p$logFC, p$FDR, FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff,
+      n_genes = n_genes)
 }
 
 ## Pick the column separator for a profiles table: `sep` if it splits the

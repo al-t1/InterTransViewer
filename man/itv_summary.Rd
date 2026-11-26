@@ -7,18 +7,36 @@
 itv_summary(x)
 }
 \arguments{
-\item{x}{An [itv] object, or a logical genes x experiments matrix of DEG calls.}
+\item{x}{An [itv] object, or a logical genes x experiments matrix of DEG
+calls (then every gene counts as tested in every experiment).}
 }
 \value{
 A data frame with columns `N` (experiment number), `experiment`,
-  `total`, `specific`, `specific_percent` and `R`.
+  `total`, `specific`, `specific_percent`, `specific_tested`,
+  `specific_untested`, `R` and `specific_oe`.
 }
 \description{
-For each experiment: `total`, the number of DEGs (n); `specific`, the
-number of DEGs found in no other experiment; `specific_percent`, their
-share (100 delta); and `R = delta * N / n`, where N is the number of genes
-that are DE in at least one experiment. `specific_percent` and `R` are
-`NA` for an experiment without DEGs.
+For each experiment:
+\describe{
+  \item{`total`}{n, the number of DEGs;}
+  \item{`specific`}{the DEGs that are DE in no other experiment;}
+  \item{`specific_percent`}{their share, 100 delta;}
+  \item{`specific_tested`, `specific_untested`}{`specific` split by
+    whether every other experiment tested the gene (it has an FDR there)
+    and found it not DE, or at least one other experiment never tested it.
+    An untested gene, e.g. one that is not on a microarray, may only look
+    specific;}
+  \item{`R`}{delta N / n, where N is the number of genes that are DE in
+    at least one experiment;}
+  \item{`specific_oe`}{observed / expected specific DEGs: `specific_tested`
+    divided by the number expected if the DEG lists were independent,
+    \eqn{m \prod_{j \ne A} (1 - n_j / G_j)}, with m the experiment's DEGs
+    tested in every other experiment, and \eqn{n_j} and \eqn{G_j} the
+    DEGs and genes tested of each other experiment. Above 1: more
+    specific DEGs than chance.}
+}
+`specific_percent`, `R` and `specific_oe` are `NA` for an experiment
+without DEGs.
 }
 \examples{
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")

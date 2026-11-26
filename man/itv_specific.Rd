@@ -10,8 +10,9 @@ itv_specific(x)
 \item{x}{An [itv] object.}
 }
 \value{
-A data frame with columns `ID`, `experiment` and `logFC`, ordered
-  by experiment.
+A data frame with columns `ID`, `experiment`, `logFC` and
+  `tested` (`TRUE` if every other experiment tested the gene; see
+  [itv_summary()]), ordered by experiment.
 }
 \description{
 Genes that are DE in one experiment only

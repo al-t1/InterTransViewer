@@ -40,3 +40,12 @@ check_hclust_method <- function(x, name) {
          call. = FALSE)
   invisible(x)
 }
+
+## match.arg() for a setting, with an error naming the argument.
+check_choice <- function(x, choices, name) {
+  if (identical(x, choices)) return(choices[1])
+  if (!is.character(x) || length(x) != 1 || is.na(x) || !x %in% choices)
+    stop("'", name, "' must be one of: ", paste0("\"", choices, "\"", collapse = ", "), ".",
+         call. = FALSE)
+  x
+}

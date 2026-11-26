@@ -8,6 +8,10 @@ itv_cluster(
   x,
   min_exps = 0,
   insignif_to_zero = FALSE,
+  scale_exps_by_range = TRUE,
+  center_genes = FALSE,
+  scale_genes_by_SD = TRUE,
+  distance = c("euclidean", "pearson", "spearman"),
   method = "ward.D2",
   boot_iter = 100
 )
@@ -20,6 +24,16 @@ itv_cluster(
 \item{insignif_to_zero}{If `TRUE`, logFC values that are not significant
 are set to 0 first.}
 
+\item{scale_exps_by_range}{Divide each experiment's logFC by its range.}
+
+\item{center_genes}{Subtract each gene's mean across experiments.}
+
+\item{scale_genes_by_SD}{Divide each gene by its standard deviation across
+experiments.}
+
+\item{distance}{`"euclidean"`, `"pearson"` (1 - Pearson r) or
+`"spearman"` (1 - Spearman rho).}
+
 \item{method}{Agglomeration method for [stats::hclust()].}
 
 \item{boot_iter}{Number of bootstrap replicates for clade support.}
@@ -29,8 +43,8 @@ An object of class `itv_cluster`: a list with `tree` (an
   `hclust` object), `experiments` (names of the experiments used; leaf i
   of the tree is `experiments[i]`), `numbers` (their positions in `x`),
   `support` (one value per merge, in the order of
-  `tree$merge`), `n_genes` (genes used) and `n_complete` (genes measured in
-  all experiments).
+  `tree$merge`), `n_genes` (genes used), `n_complete` (genes measured in
+  all experiments), `n_total` (genes in `x`) and the settings.
 }
 \description{
 Hierarchical clustering of experiments by the logFC of genes measured in
@@ -39,18 +53,37 @@ all of them, with bootstrap support for each clade.
 \details{
 Only genes with a finite logFC and a known FDR in every experiment are
 used, optionally only those that are DE in at least `min_exps`
-experiments. Each experiment is divided by the range of its logFC, then
-each gene by its standard deviation across experiments; genes with zero
-variance are dropped. An experiment whose logFC does not vary (for
-example, one without DEGs when `insignif_to_zero = TRUE`) is left out with
-a warning. Euclidean distances are clustered with [stats::hclust()].
+experiments. The logFC values are then, in this order and each if asked:
+\enumerate{
+  \item divided by the range of each experiment's logFC (`scale_exps_by_range`),
+    so that experiments with stronger responses overall do not dominate;
+  \item centred: each gene's mean across experiments is subtracted
+    (`center_genes`);
+  \item divided by each gene's standard deviation across experiments
+    (`scale_genes_by_SD`); genes with zero variance are dropped.
+}
+With `center_genes` and `scale_genes_by_SD` each gene is z-scored. The defaults
+(`scale_exps_by_range` and `scale_genes_by_SD`, no centring) are the method of
+InterTransViewer 0.1 and the 2023 paper.
+
+An experiment whose logFC does not vary (for example, one without DEGs
+when `insignif_to_zero = TRUE`) is left out with a warning. Distances
+between experiments are Euclidean, or 1 - r for Pearson or Spearman
+correlation across genes; correlation ignores `scale_exps_by_range`. The tree is
+built with [stats::hclust()].
+
 Clade support is the fraction of `boot_iter` trees, built from genes
-resampled with replacement, that contain the clade.
+resampled with replacement, that contain the clade. Genes are not
+independent (they respond in groups), so this support overstates how sure
+the clustering is; read it as relative, not as a probability.
 }
 \examples{
 f <- system.file("extdata", "example_profiles.csv", package = "InterTransViewer")
+x <- itv_read(f)
 set.seed(1)
-cl <- itv_cluster(itv_read(f), boot_iter = 20)
+cl <- itv_cluster(x, boot_iter = 20)
 cl
 plot(cl)
+## Genes z-scored, 1 - Pearson r
+plot(itv_cluster(x, center_genes = TRUE, distance = "pearson", boot_iter = 20))
 }

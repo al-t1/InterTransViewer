@@ -15,12 +15,21 @@
 #' @param FDR_cutoff A number in (0, 1].
 #' @param logFC_cutoff A number >= 0, on the scale of `logFC` (usually log2),
 #'   e.g. `log2(1.5)`.
+#' @param n_genes For a table that holds only DEGs: the number of genes
+#'   tested, e.g. all genes of the genome or array. The genes not in the
+#'   table are taken as tested and not DE in every experiment. Only the
+#'   chance levels use it (the expected similarity in [itv_pairs()] and
+#'   `specific_oe` in [itv_summary()]). `NULL` means the table holds every
+#'   gene tested; a warning is given if every gene in a table of 100 or more
+#'   is a DEG somewhere.
 #' @return An object of class `itv`: a list with
 #'   \item{logFC, FDR}{the input matrices;}
 #'   \item{deg}{logical matrix of DEG calls;}
-#'   \item{measured}{logical matrix, `TRUE` where the FDR is not missing.
-#'     Kept for reference; the indicators treat unmeasured genes as not DE;}
-#'   \item{FDR_cutoff, logFC_cutoff}{the DEG definition.}
+#'   \item{measured}{logical matrix, `TRUE` where the FDR is not missing:
+#'     the gene was tested in that experiment;}
+#'   \item{FDR_cutoff, logFC_cutoff}{the DEG definition;}
+#'   \item{n_genes}{the number of genes tested, or `NULL` if that is the
+#'     number of rows.}
 #' @examples
 #' lfc <- matrix(c(2, -1, 0.1, 3, 0.5, -2), 3,
 #'               dimnames = list(c("g1", "g2", "g3"), c("a", "b")))
@@ -29,7 +38,7 @@
 #' x$deg
 #' itv(lfc, fdr, logFC_cutoff = 1)$deg
 #' @export
-itv <- function(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0) {
+itv <- function(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0, n_genes = NULL) {
   logFC <- as.matrix(logFC)
   FDR <- as.matrix(FDR)
   if (!is.numeric(logFC) || !is.numeric(FDR))
@@ -45,12 +54,24 @@ itv <- function(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0) {
   dimnames(FDR) <- dimnames(logFC)
   check_number(FDR_cutoff, "FDR_cutoff", 0, 1, min_open = TRUE)
   check_number(logFC_cutoff, "logFC_cutoff", 0)
+  deg <- call_degs(logFC, FDR, FDR_cutoff, logFC_cutoff)
+  if (!is.null(n_genes)) {
+    check_number(n_genes, "n_genes", nrow(logFC), whole = TRUE)
+  } else if (nrow(deg) >= 100 && all(rowSums(deg) > 0)) {
+    warning("Every gene in the table is a DEG in at least one experiment, so the ",
+            "table looks filtered to DEGs. Set n_genes (the number of genes tested) ",
+            "for the chance levels of the similarity and specific_oe.", call. = FALSE)
+  }
 
-  structure(list(logFC = logFC, FDR = FDR,
-                 deg = call_degs(logFC, FDR, FDR_cutoff, logFC_cutoff),
-                 measured = !is.na(FDR),
-                 FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff),
+  structure(list(logFC = logFC, FDR = FDR, deg = deg, measured = !is.na(FDR),
+                 FDR_cutoff = FDR_cutoff, logFC_cutoff = logFC_cutoff,
+                 n_genes = n_genes),
             class = "itv")
+}
+
+## Genes outside the table that count as tested and not DE everywhere.
+extra_genes <- function(x) {
+  if (inherits(x, "itv") && !is.null(x$n_genes)) x$n_genes - nrow(x$deg) else 0
 }
 
 call_degs <- function(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0) {
@@ -64,6 +85,7 @@ call_degs <- function(logFC, FDR, FDR_cutoff = 0.05, logFC_cutoff = 0) {
 print.itv <- function(x, ...) {
   exps <- colnames(x$deg)
   cat("<itv> ", nrow(x$deg), " genes x ", length(exps), " experiments\n", sep = "")
+  if (!is.null(x$n_genes)) cat("Genes tested: ", x$n_genes, "\n", sep = "")
   cat("DEG: FDR < ", x$FDR_cutoff,
       if (x$logFC_cutoff > 0) paste0(" and |logFC| >= ", signif(x$logFC_cutoff, 3)),
       "\n", sep = "")

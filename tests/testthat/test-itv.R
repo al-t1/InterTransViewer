@@ -18,7 +18,8 @@ test_that("itv fills in names and stores the DEG definition", {
   expect_equal(x$logFC_cutoff, 0)
   expect_true(all(x$measured))
   expect_setequal(names(x), c("logFC", "FDR", "deg", "measured", "FDR_cutoff",
-                              "logFC_cutoff"))
+                              "logFC_cutoff", "n_genes"))
+  expect_null(x$n_genes)
 })
 
 test_that("itv rejects bad input", {
